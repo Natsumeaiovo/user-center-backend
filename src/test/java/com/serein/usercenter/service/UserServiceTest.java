@@ -23,11 +23,11 @@ public class UserServiceTest {
     public void testAddUser() {
         User user = new User();
         user.setId(0L);
-        user.setUsername("dog111");
+        user.setUsername("dog0123cat");
         user.setUserAccount("123");
         user.setAvatarUrl("123123");
         user.setGender(0);
-        user.setUserPassword("xxx");
+        user.setUserPassword("xyz123456");
         user.setPhone("1234");
         user.setEmail("56");
 
@@ -36,9 +36,17 @@ public class UserServiceTest {
         System.out.println(user.getId());
         Assertions.assertTrue(result);
     }
+    @Test
+    void testUserRegister() {
+        String userAccount = "admin";
+        String userPassword = "12345678";
+        String checkPassword = "12345678";
+        long result = userService.userRegister(userAccount, userPassword, checkPassword);
+        System.out.println(result);
+    }
 
     @Test
-    void userRegister() {
+    void testUserRegisterCondition() {
         // 密码为空
         String userAccount = "yupi";
         String userPassword = "";
