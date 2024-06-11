@@ -5,6 +5,7 @@ import com.serein.usercenter.model.domain.User;
 import com.serein.usercenter.model.domain.request.UserLoginRequest;
 import com.serein.usercenter.model.domain.request.UserRegisterRequest;
 import com.serein.usercenter.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +22,7 @@ import static com.serein.usercenter.constant.UserConstant.USER_LOGIN_STATE;
  * 用户接口
  * @author serein
  */
+@Slf4j
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -36,15 +38,30 @@ public class UserController {
         String userAccount = userRegisterRequest.getUserAccount();
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
-        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
+        String planetCode = userRegisterRequest.getPlanetCode();
+        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, planetCode)) {
             return null;
         }
 
-        return userService.userRegister(userAccount, userPassword, checkPassword);
+        return userService.userRegister(userAccount, userPassword, checkPassword, planetCode);
+    }
+
+    @GetMapping("/current")
+    public User getCurrentUser(HttpServletRequest request) {
+        Object userobj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        User currentUser = (User) userobj;
+        if (currentUser == null) {
+            return null;
+        }
+        long userId = currentUser.getId();
+        // TODO 校验用户是否合法
+        User user = userService.getById(userId);
+        return userService.getSafetyUser(user);
     }
 
     @PostMapping("/login")
     public User userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+        log.info("用户登录: {}", userLoginRequest);
         if (userLoginRequest == null) {
             return null;
         }
@@ -57,6 +74,15 @@ public class UserController {
         }
 
         return userService.userLogin(userAccount, userPassword, request);
+    }
+
+    @PostMapping("/logout")
+    public Integer userLogout(HttpServletRequest request) {
+        log.info("用户注销: {}", request.getSession().getAttribute(USER_LOGIN_STATE));
+        if (request == null) {
+            return null;
+        }
+        return userService.userLogout(request);
     }
 
     @GetMapping("/search")
