@@ -2,6 +2,8 @@ package com.serein.usercenter.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.serein.usercenter.common.ErrorCode;
+import com.serein.usercenter.exception.BusinessException;
 import com.serein.usercenter.service.UserService;
 import com.serein.usercenter.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -39,17 +41,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public long userRegister(String userAccount, String userPassword, String checkPassword, String planetCode) {
         // 1. 校验
         if (StringUtils.isAllBlank(userAccount, userPassword, checkPassword, planetCode)) {
-            // TODO 修改为自定义异常
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "存在参数为空");
         }
         if (userAccount.length() < 4) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号不能小于4位");
         }
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码应大于8位");
         }
         if (planetCode.length() > 5) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "星球编号过长");
         }
 
         // 账户不包含特殊字符

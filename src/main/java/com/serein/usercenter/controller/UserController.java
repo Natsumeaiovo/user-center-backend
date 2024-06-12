@@ -1,6 +1,10 @@
 package com.serein.usercenter.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.serein.usercenter.common.BaseResponse;
+import com.serein.usercenter.common.ErrorCode;
+import com.serein.usercenter.common.ResultUtils;
+import com.serein.usercenter.exception.BusinessException;
 import com.serein.usercenter.model.domain.User;
 import com.serein.usercenter.model.domain.request.UserLoginRequest;
 import com.serein.usercenter.model.domain.request.UserRegisterRequest;
@@ -30,9 +34,10 @@ public class UserController {
     private UserService userService;
 
     @PostMapping("/register")
-    public Long userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
+    public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
         if (userRegisterRequest == null) {
-            return null;
+//            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         String userAccount = userRegisterRequest.getUserAccount();
@@ -43,11 +48,12 @@ public class UserController {
             return null;
         }
 
-        return userService.userRegister(userAccount, userPassword, checkPassword, planetCode);
+        long result = userService.userRegister(userAccount, userPassword, checkPassword, planetCode);
+        return ResultUtils.success(result);
     }
 
     @GetMapping("/current")
-    public User getCurrentUser(HttpServletRequest request) {
+    public BaseResponse<User> getCurrentUser(HttpServletRequest request) {
         Object userobj = request.getSession().getAttribute(USER_LOGIN_STATE);
         User currentUser = (User) userobj;
         if (currentUser == null) {
@@ -56,11 +62,13 @@ public class UserController {
         long userId = currentUser.getId();
         // TODO 校验用户是否合法
         User user = userService.getById(userId);
-        return userService.getSafetyUser(user);
+        User safetyUser = userService.getSafetyUser(user);
+        log.info("当前用户: {}", safetyUser);
+        return ResultUtils.success(safetyUser);
     }
 
     @PostMapping("/login")
-    public User userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+    public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
         log.info("用户登录: {}", userLoginRequest);
         if (userLoginRequest == null) {
             return null;
@@ -73,23 +81,25 @@ public class UserController {
             return null;
         }
 
-        return userService.userLogin(userAccount, userPassword, request);
+        User user = userService.userLogin(userAccount, userPassword, request);
+        return ResultUtils.success(user);
     }
 
     @PostMapping("/logout")
-    public Integer userLogout(HttpServletRequest request) {
-        log.info("用户注销: {}", request.getSession().getAttribute(USER_LOGIN_STATE));
+    public BaseResponse<Integer> userLogout(HttpServletRequest request) {
         if (request == null) {
             return null;
         }
-        return userService.userLogout(request);
+        log.info("用户注销: {}", request.getSession().getAttribute(USER_LOGIN_STATE));
+        int result = userService.userLogout(request);
+        return ResultUtils.success(result);
     }
 
     @GetMapping("/search")
-    public List<User> searchUsers(String username, HttpServletRequest request) {
+    public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest request) {
         // 仅管理员可查询
         if (!isAdmin(request)) {
-            return new ArrayList<>();
+            throw  new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -97,21 +107,23 @@ public class UserController {
             queryWrapper.like("username", username);
         }
         List<User> userList = userService.list(queryWrapper);
-        return userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
+        List<User> users = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
+        return ResultUtils.success(users);
     }
 
     @PostMapping("/delete")
-    public boolean deleteUser(@RequestBody long id, HttpServletRequest request) {
+    public BaseResponse<Boolean> deleteUser(@RequestBody long id, HttpServletRequest request) {
         // 仅管理员可删除
         if (!isAdmin(request)) {
-            return false;
+            return null;
         }
 
         if (id <= 0) {
-            return false;
+            return null;
         }
 
-        return userService.removeById(id);  // 已开启逻辑删除
+        boolean result = userService.removeById(id);// 已开启逻辑删除
+        return ResultUtils.success(result);
     }
 
     /**
