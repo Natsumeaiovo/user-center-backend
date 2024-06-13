@@ -57,7 +57,7 @@ public class UserController {
         Object userobj = request.getSession().getAttribute(USER_LOGIN_STATE);
         User currentUser = (User) userobj;
         if (currentUser == null) {
-            return null;
+            throw new BusinessException(ErrorCode.NOT_LOGIN);
         }
         long userId = currentUser.getId();
         // TODO 校验用户是否合法
@@ -71,14 +71,14 @@ public class UserController {
     public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
         log.info("用户登录: {}", userLoginRequest);
         if (userLoginRequest == null) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         String userAccount = userLoginRequest.getUserAccount();
         String userPassword = userLoginRequest.getUserPassword();
 
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         User user = userService.userLogin(userAccount, userPassword, request);
@@ -88,7 +88,7 @@ public class UserController {
     @PostMapping("/logout")
     public BaseResponse<Integer> userLogout(HttpServletRequest request) {
         if (request == null) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         log.info("用户注销: {}", request.getSession().getAttribute(USER_LOGIN_STATE));
         int result = userService.userLogout(request);
@@ -99,7 +99,7 @@ public class UserController {
     public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest request) {
         // 仅管理员可查询
         if (!isAdmin(request)) {
-            throw  new BusinessException(ErrorCode.PARAMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -115,11 +115,11 @@ public class UserController {
     public BaseResponse<Boolean> deleteUser(@RequestBody long id, HttpServletRequest request) {
         // 仅管理员可删除
         if (!isAdmin(request)) {
-            return null;
+            throw new BusinessException(ErrorCode.NO_AUTH);
         }
 
         if (id <= 0) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         boolean result = userService.removeById(id);// 已开启逻辑删除

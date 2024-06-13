@@ -57,27 +57,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         String invalidPattern = "\\pP|\\pS|\\s+";
         Matcher matcher = Pattern.compile(invalidPattern).matcher(userAccount);
         if (matcher.find()) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账户包含特殊字符");
         }
 
         // 密码和校验密码相同
         if (!userPassword.equals(checkPassword)) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码和校验密码不相同");
         }
 
-        // 账户不能重复
+        // 账号不能重复
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("userAccount", userAccount);
         long count = userMapper.selectCount(queryWrapper);
         if (count > 0) {
-            return -1;  // 有人注册了
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");  // 有人注册了
         }
         // 星球编号不能重复
         queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("planetCode", planetCode);
         count = userMapper.selectCount(queryWrapper);
         if (count > 0) {
-            return -1;  // 星球编号重复了
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "星球编号重复");  // 星球编号重复了
         }
 
         // 2. 加密
@@ -90,7 +90,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setPlanetCode(planetCode);
         boolean saveResult = this.save(user);
         if (!saveResult) {
-            return -1;  // 保存失败
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "保存失败");  // 保存失败
         }
 
         return user.getId();
@@ -113,7 +113,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         String invalidPattern = "\\pP|\\pS|\\s+";
         Matcher matcher = Pattern.compile(invalidPattern).matcher(userAccount);
         if (matcher.find()) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号包含特殊字符");
         }
 
 
@@ -127,7 +127,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 用户不存在
         if (user == null) {
             log.info("user login failed, userAccount cannot match userPassword.");
-            return null;
+            throw new BusinessException(ErrorCode.NULL_ERROR, "用户不存在");
         }
 
         // 3. 用户脱敏
